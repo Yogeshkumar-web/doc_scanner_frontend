@@ -37,6 +37,7 @@ function App() {
     addPage({
       id: crypto.randomUUID(),
       imageBase64: data.image_base64,
+      imageMimeType: data.image_mime_type || 'image/jpeg',
       originalDataUrl,
       originalName,
       originalType,

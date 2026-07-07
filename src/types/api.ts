@@ -3,6 +3,7 @@ export type ScanMode = 'auto' | 'print' | 'color' | 'gray' | 'bw' | 'soft';
 export interface ScanResponse {
   success: boolean;
   image_base64: string;
+  image_mime_type?: string;
   width: number;
   height: number;
   edge_detected: boolean;
@@ -33,6 +34,7 @@ export interface ApiErrorResponse {
 export interface PageItem {
   id: string;            // crypto.randomUUID()
   imageBase64: string;   // processed image from backend
+  imageMimeType?: string;
   originalDataUrl?: string;
   originalName?: string;
   originalType?: string;

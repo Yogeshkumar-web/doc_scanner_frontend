@@ -78,7 +78,7 @@ export const PageThumbnail: React.FC<PageThumbnailProps> = ({
       {/* Image Preview Container */}
       <div className="relative aspect-[3/4] bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden border-b border-slate-200 dark:border-slate-800">
         <img
-          src={`data:image/png;base64,${page.imageBase64}`}
+          src={`data:${page.imageMimeType || 'image/jpeg'};base64,${page.imageBase64}`}
           alt={`Page ${index + 1}`}
           className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
         />
