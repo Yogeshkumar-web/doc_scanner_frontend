@@ -4,6 +4,7 @@ import { manualCropImage } from '../api/scanApi';
 import { usePageStore } from '../store/usePageStore';
 import type { CropPoint, PageItem } from '../types/api';
 import { compressImage } from '../utils/compressImage';
+import { base64ToFile } from '../utils/imageData';
 
 export function useManualCropPage() {
   const updatePage = usePageStore((state) => state.updatePage);
@@ -15,12 +16,21 @@ export function useManualCropPage() {
       }
       const compressedFile = await compressImage(page.originalFile);
       const data = await manualCropImage(compressedFile, points, 'auto');
-      return { page, data };
+      const imageMimeType = data.image_mime_type || 'image/jpeg';
+      const processedImageFile = base64ToFile(data.image_base64, `${page.id}.jpg`, imageMimeType);
+      return {
+        page,
+        data,
+        imageMimeType,
+        processedImageFile,
+        processedImageUrl: URL.createObjectURL(processedImageFile),
+      };
     },
-    onSuccess: ({ page, data }) => {
+    onSuccess: ({ page, data, imageMimeType, processedImageFile, processedImageUrl }) => {
       updatePage(page.id, {
-        imageBase64: data.image_base64,
-        imageMimeType: data.image_mime_type || 'image/jpeg',
+        imageMimeType,
+        processedImageFile,
+        processedImageUrl,
         edgeDetected: data.edge_detected,
         confidence: data.crop_confidence ?? data.confidence,
         cropMethod: data.crop_method,

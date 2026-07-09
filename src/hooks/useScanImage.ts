@@ -3,6 +3,7 @@ import { scanImage } from '../api/scanApi';
 import { usePageStore } from '../store/usePageStore';
 import { toast } from 'sonner';
 import type { ScanMode } from '../types/api';
+import { base64ToFile } from '../utils/imageData';
 
 export function useScanImage() {
   const addPage = usePageStore((s) => s.addPage);
@@ -10,19 +11,25 @@ export function useScanImage() {
   return useMutation({
     mutationFn: async ({ file, mode }: { file: File; mode: ScanMode }) => {
       const data = await scanImage(file, mode);
+      const imageMimeType = data.image_mime_type || 'image/jpeg';
+      const processedImageFile = base64ToFile(data.image_base64, `${crypto.randomUUID()}.jpg`, imageMimeType);
       return {
         data,
+        imageMimeType,
+        processedImageFile,
+        processedImageUrl: URL.createObjectURL(processedImageFile),
         originalFile: file,
         originalObjectUrl: URL.createObjectURL(file),
         originalName: file.name,
         originalType: file.type || 'image/jpeg',
       };
     },
-    onSuccess: ({ data, originalFile, originalObjectUrl, originalName, originalType }) => {
+    onSuccess: ({ data, imageMimeType, processedImageFile, processedImageUrl, originalFile, originalObjectUrl, originalName, originalType }) => {
       addPage({
         id: crypto.randomUUID(),
-        imageBase64: data.image_base64,
-        imageMimeType: data.image_mime_type || 'image/jpeg',
+        imageMimeType,
+        processedImageFile,
+        processedImageUrl,
         originalFile,
         originalObjectUrl,
         originalName,

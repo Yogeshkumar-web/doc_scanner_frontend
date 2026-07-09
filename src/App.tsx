@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { manualCropImage } from './api/scanApi';
 import type { CropPoint, ScanResponse } from './types/api';
 import { usePageStore } from './store/usePageStore';
+import { base64ToFile } from './utils/imageData';
 
 interface PendingCapture {
   file: File;
@@ -23,6 +24,14 @@ function revokeObjectUrl(objectUrl?: string) {
   if (objectUrl && typeof URL.revokeObjectURL === 'function') {
     URL.revokeObjectURL(objectUrl);
   }
+}
+
+function isSupportedImage(file: File) {
+  return (
+    file.type === 'image/jpeg'
+    || file.type === 'image/png'
+    || /\.(jpe?g|png)$/i.test(file.name)
+  );
 }
 
 function App() {
@@ -40,10 +49,13 @@ function App() {
     originalName: string,
     originalType: string,
   ) => {
+    const imageMimeType = data.image_mime_type || 'image/jpeg';
+    const processedImageFile = base64ToFile(data.image_base64, `${crypto.randomUUID()}.jpg`, imageMimeType);
     addPage({
       id: crypto.randomUUID(),
-      imageBase64: data.image_base64,
-      imageMimeType: data.image_mime_type || 'image/jpeg',
+      imageMimeType,
+      processedImageFile,
+      processedImageUrl: URL.createObjectURL(processedImageFile),
       originalFile,
       originalObjectUrl,
       originalName,
@@ -82,7 +94,7 @@ function App() {
   };
 
   const handleFilesSelected = async (files: File[]) => {
-    const imageFiles = files.filter((file) => file.type === 'image/jpeg' || file.type === 'image/png');
+    const imageFiles = files.filter(isSupportedImage);
     if (imageFiles.length === 0) {
       toast.error('Please select JPEG or PNG images.');
       return;
@@ -93,17 +105,28 @@ function App() {
     }
 
     try {
+      let successCount = 0;
+      let failureCount = 0;
       for (const [index, file] of imageFiles.entries()) {
         const position = `${index + 1}/${imageFiles.length}`;
-        setLoadingMessage(`Compressing image ${position}...`);
-        const compressedFile = await compressImage(file);
+        try {
+          setLoadingMessage(`Preparing image ${position}...`);
+          const compressedFile = await compressImage(file);
 
-        setLoadingMessage(`Enhancing image ${position}...`);
-        await scanMutateAsync({ file: compressedFile, mode: 'auto' });
+          setLoadingMessage(`Enhancing image ${position}...`);
+          await scanMutateAsync({ file: compressedFile, mode: 'auto' });
+          successCount += 1;
+        } catch (error) {
+          failureCount += 1;
+          console.error('Upload image processing failed:', error);
+        }
       }
 
-      if (imageFiles.length > 1) {
-        toast.success(`${imageFiles.length} pages added.`);
+      if (successCount > 0 && imageFiles.length > 1) {
+        toast.success(`${successCount} pages added.`);
+      }
+      if (failureCount > 0) {
+        toast.error(`${failureCount} image${failureCount === 1 ? '' : 's'} failed to process.`);
       }
     } catch (error) {
       console.error(error);
@@ -114,7 +137,7 @@ function App() {
   };
 
   const handleCaptureFilesSelected = async (files: File[]) => {
-    const imageFiles = files.filter((file) => file.type === 'image/jpeg' || file.type === 'image/png');
+    const imageFiles = files.filter(isSupportedImage);
     if (imageFiles.length === 0) {
       toast.error('Please capture a JPEG or PNG image.');
       return;

@@ -33,8 +33,10 @@ export interface ApiErrorResponse {
 
 export interface PageItem {
   id: string;            // crypto.randomUUID()
-  imageBase64: string;   // processed image from backend
+  imageBase64?: string;  // legacy processed image fallback
   imageMimeType?: string;
+  processedImageFile?: File;
+  processedImageUrl?: string;
   originalFile?: File;
   originalObjectUrl?: string;
   originalName?: string;

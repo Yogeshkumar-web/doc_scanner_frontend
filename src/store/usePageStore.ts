@@ -14,13 +14,28 @@ function revokePageObjectUrl(page: PageItem) {
   if (page.originalObjectUrl && typeof URL.revokeObjectURL === 'function') {
     URL.revokeObjectURL(page.originalObjectUrl);
   }
+  if (page.processedImageUrl && typeof URL.revokeObjectURL === 'function') {
+    URL.revokeObjectURL(page.processedImageUrl);
+  }
 }
 
 export const usePageStore = create<PageStore>((set) => ({
   pages: [],
   addPage: (page) => set((state) => ({ pages: [...state.pages, page] })),
   updatePage: (id, patch) => set((state) => ({
-    pages: state.pages.map((page) => (page.id === id ? { ...page, ...patch } : page)),
+    pages: state.pages.map((page) => {
+      if (page.id !== id) {
+        return page;
+      }
+      if (
+        patch.processedImageUrl
+        && page.processedImageUrl
+        && patch.processedImageUrl !== page.processedImageUrl
+      ) {
+        URL.revokeObjectURL(page.processedImageUrl);
+      }
+      return { ...page, ...patch };
+    }),
   })),
   removePage: (id) => set((state) => {
     const page = state.pages.find((item) => item.id === id);
