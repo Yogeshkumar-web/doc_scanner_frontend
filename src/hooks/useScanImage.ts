@@ -3,30 +3,28 @@ import { scanImage } from '../api/scanApi';
 import { usePageStore } from '../store/usePageStore';
 import { toast } from 'sonner';
 import type { ScanMode } from '../types/api';
-import { fileToDataUrl } from '../utils/fileData';
 
 export function useScanImage() {
   const addPage = usePageStore((s) => s.addPage);
 
   return useMutation({
     mutationFn: async ({ file, mode }: { file: File; mode: ScanMode }) => {
-      const [data, originalDataUrl] = await Promise.all([
-        scanImage(file, mode),
-        fileToDataUrl(file),
-      ]);
+      const data = await scanImage(file, mode);
       return {
         data,
-        originalDataUrl,
+        originalFile: file,
+        originalObjectUrl: URL.createObjectURL(file),
         originalName: file.name,
         originalType: file.type || 'image/jpeg',
       };
     },
-    onSuccess: ({ data, originalDataUrl, originalName, originalType }) => {
+    onSuccess: ({ data, originalFile, originalObjectUrl, originalName, originalType }) => {
       addPage({
         id: crypto.randomUUID(),
         imageBase64: data.image_base64,
         imageMimeType: data.image_mime_type || 'image/jpeg',
-        originalDataUrl,
+        originalFile,
+        originalObjectUrl,
         originalName,
         originalType,
         edgeDetected: data.edge_detected,

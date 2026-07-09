@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { usePageStore } from './usePageStore';
 import type { PageItem, ScanMode } from '../types/api';
 
@@ -44,6 +44,21 @@ describe('usePageStore', () => {
     usePageStore.getState().removePage('1');
     expect(usePageStore.getState().pages).toHaveLength(1);
     expect(usePageStore.getState().pages[0].id).toBe('2');
+  });
+
+  it('should revoke original object URLs when removing pages', () => {
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const page = makePage({
+      id: '1',
+      imageBase64: 'base64_data',
+      originalObjectUrl: 'blob:test-url',
+    });
+
+    usePageStore.getState().addPage(page);
+    usePageStore.getState().removePage('1');
+
+    expect(revokeSpy).toHaveBeenCalledWith('blob:test-url');
+    revokeSpy.mockRestore();
   });
 
   it('should update a page successfully', () => {

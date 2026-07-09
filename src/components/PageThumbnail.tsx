@@ -128,7 +128,7 @@ export const PageThumbnail: React.FC<PageThumbnailProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h.01M8 12h.01M8 17h.01M16 7h.01M16 12h.01M16 17h.01" />
             </svg>
           </span>
-          {page.originalDataUrl && (
+          {page.originalObjectUrl && (
             <button
               onClick={() => onAdjustCrop(page)}
               className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750 cursor-pointer"

@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { manualCropImage } from '../api/scanApi';
 import { usePageStore } from '../store/usePageStore';
 import type { CropPoint, PageItem } from '../types/api';
-import { dataUrlToFile } from '../utils/fileData';
 import { compressImage } from '../utils/compressImage';
 
 export function useManualCropPage() {
@@ -11,15 +10,10 @@ export function useManualCropPage() {
 
   return useMutation({
     mutationFn: async ({ page, points }: { page: PageItem; points: CropPoint[] }) => {
-      if (!page.originalDataUrl) {
+      if (!page.originalFile) {
         throw new Error('Original image is not available for this page.');
       }
-      const file = dataUrlToFile(
-        page.originalDataUrl,
-        page.originalName || `${page.id}.jpg`,
-        page.originalType || 'image/jpeg',
-      );
-      const compressedFile = await compressImage(file);
+      const compressedFile = await compressImage(page.originalFile);
       const data = await manualCropImage(compressedFile, points, 'auto');
       return { page, data };
     },

@@ -11,13 +11,18 @@ import { compressImage } from './utils/compressImage';
 import { toast } from 'sonner';
 import { manualCropImage } from './api/scanApi';
 import type { CropPoint, ScanResponse } from './types/api';
-import { fileToDataUrl } from './utils/fileData';
 import { usePageStore } from './store/usePageStore';
 
 interface PendingCapture {
   file: File;
-  dataUrl: string;
+  objectUrl: string;
   queue: File[];
+}
+
+function revokeObjectUrl(objectUrl?: string) {
+  if (objectUrl && typeof URL.revokeObjectURL === 'function') {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function App() {
@@ -30,7 +35,8 @@ function App() {
 
   const addScanResult = (
     data: ScanResponse,
-    originalDataUrl: string,
+    originalFile: File,
+    originalObjectUrl: string,
     originalName: string,
     originalType: string,
   ) => {
@@ -38,7 +44,8 @@ function App() {
       id: crypto.randomUUID(),
       imageBase64: data.image_base64,
       imageMimeType: data.image_mime_type || 'image/jpeg',
-      originalDataUrl,
+      originalFile,
+      originalObjectUrl,
       originalName,
       originalType,
       edgeDetected: data.edge_detected,
@@ -62,9 +69,10 @@ function App() {
       setPendingCapture(null);
       return;
     }
+    const preparedFile = await compressImage(file);
     setPendingCapture({
-      file,
-      dataUrl: await fileToDataUrl(file),
+      file: preparedFile,
+      objectUrl: URL.createObjectURL(preparedFile),
       queue,
     });
   };
@@ -118,11 +126,11 @@ function App() {
     if (!pendingCapture) {
       return;
     }
-    const { file, queue } = pendingCapture;
+    const { file, objectUrl, queue } = pendingCapture;
     try {
       setLoadingMessage('Enhancing image...');
-      const compressedFile = await compressImage(file);
-      await scanMutateAsync({ file: compressedFile, mode: 'auto' });
+      await scanMutateAsync({ file, mode: 'auto' });
+      revokeObjectUrl(objectUrl);
       setPendingCapture(null);
       await continueCaptureQueue(queue);
     } catch (error) {
@@ -137,12 +145,11 @@ function App() {
     if (!pendingCapture) {
       return;
     }
-    const { file, dataUrl, queue } = pendingCapture;
+    const { file, objectUrl, queue } = pendingCapture;
     try {
       setLoadingMessage('Cropping & enhancing image...');
-      const compressedFile = await compressImage(file);
-      const data = await manualCropImage(compressedFile, points, 'auto');
-      addScanResult(data, dataUrl, compressedFile.name, compressedFile.type || file.type || 'image/jpeg');
+      const data = await manualCropImage(file, points, 'auto');
+      addScanResult(data, file, objectUrl, file.name, file.type || 'image/jpeg');
       toast.success('Page scanned successfully.');
       setPendingCapture(null);
       await continueCaptureQueue(queue);
@@ -161,6 +168,11 @@ function App() {
         setLoadingMessage(null);
       },
     });
+  };
+
+  const closeCaptureModal = () => {
+    revokeObjectUrl(pendingCapture?.objectUrl);
+    setPendingCapture(null);
   };
 
   const isOverlayVisible = isScanPending || isPdfPending || loadingMessage !== null;
@@ -247,7 +259,7 @@ function App() {
 
       {pendingCapture && (
         <CropModal
-          imageDataUrl={pendingCapture.dataUrl}
+          imageUrl={pendingCapture.objectUrl}
           title="Review captured page"
           subtitle="Use OK for full image or adjust handles to crop."
           isPending={isOverlayVisible}
@@ -255,7 +267,7 @@ function App() {
           applyLabel="Apply crop"
           onAcceptFull={handleAcceptCaptureFull}
           onApplyCrop={handleApplyCaptureCrop}
-          onClose={() => setPendingCapture(null)}
+          onClose={closeCaptureModal}
         />
       )}
     </div>

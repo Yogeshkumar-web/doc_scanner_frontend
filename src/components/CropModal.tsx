@@ -14,7 +14,7 @@ type DragHandle =
   | { type: 'center'; start: CropPoint; points: CropPoint[] };
 
 interface CropModalProps {
-  imageDataUrl: string;
+  imageUrl: string;
   title: string;
   subtitle?: string;
   isPending?: boolean;
@@ -37,7 +37,7 @@ function centerOf(points: CropPoint[]): CropPoint {
 }
 
 export const CropModal: React.FC<CropModalProps> = ({
-  imageDataUrl,
+  imageUrl,
   title,
   subtitle,
   isPending = false,
@@ -154,7 +154,7 @@ export const CropModal: React.FC<CropModalProps> = ({
             onPointerCancel={() => setDragHandle(null)}
           >
             <img
-              src={imageDataUrl}
+              src={imageUrl}
               alt="Original page"
               className="block max-h-[calc(100vh-240px)] max-w-full rounded-lg"
               draggable={false}

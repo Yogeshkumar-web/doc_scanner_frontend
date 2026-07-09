@@ -16,13 +16,13 @@ export const CropEditor: React.FC<CropEditorProps> = ({ page, onClose }) => {
     onClose();
   };
 
-  if (!page.originalDataUrl) {
+  if (!page.originalObjectUrl) {
     return null;
   }
 
   return (
     <CropModal
-      imageDataUrl={page.originalDataUrl}
+      imageUrl={page.originalObjectUrl}
       title="Adjust crop"
       subtitle={`Page ${page.id.slice(0, 8)}`}
       isPending={isPending}

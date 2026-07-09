@@ -35,7 +35,8 @@ export interface PageItem {
   id: string;            // crypto.randomUUID()
   imageBase64: string;   // processed image from backend
   imageMimeType?: string;
-  originalDataUrl?: string;
+  originalFile?: File;
+  originalObjectUrl?: string;
   originalName?: string;
   originalType?: string;
   edgeDetected: boolean;
