@@ -1,18 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
-import { scanImage } from '../api/scanApi';
+import { scanImageAsFile } from '../api/scanApi';
 import { usePageStore } from '../store/usePageStore';
 import { toast } from 'sonner';
 import type { ScanMode } from '../types/api';
-import { base64ToFile } from '../utils/imageData';
 
 export function useScanImage() {
   const addPage = usePageStore((s) => s.addPage);
 
   return useMutation({
     mutationFn: async ({ file, mode }: { file: File; mode: ScanMode }) => {
-      const data = await scanImage(file, mode);
+      const { data, processedImageFile } = await scanImageAsFile(file, mode);
       const imageMimeType = data.image_mime_type || 'image/jpeg';
-      const processedImageFile = base64ToFile(data.image_base64, `${crypto.randomUUID()}.jpg`, imageMimeType);
       return {
         data,
         imageMimeType,

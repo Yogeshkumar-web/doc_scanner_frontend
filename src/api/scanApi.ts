@@ -1,6 +1,11 @@
 import { apiClient } from './client';
 import type { CropPoint, ScanMode, ScanResponse } from '../types/api';
 
+export interface ScanImageResult {
+  data: ScanResponse;
+  processedImageFile: File;
+}
+
 function normalizeImageFile(file: File): File {
   if (file.type === 'image/jpeg' || file.type === 'image/png') {
     return file;
@@ -24,6 +29,41 @@ export async function scanImage(file: File, mode: ScanMode = 'auto'): Promise<Sc
     },
   });
   return data;
+}
+
+function decodeMetadataHeader(headerValue: string): ScanResponse {
+  const padding = '='.repeat((4 - (headerValue.length % 4)) % 4);
+  const json = atob(`${headerValue}${padding}`.replace(/-/g, '+').replace(/_/g, '/'));
+  return {
+    ...JSON.parse(json),
+    image_base64: '',
+  };
+}
+
+export async function scanImageAsFile(file: File, mode: ScanMode = 'auto'): Promise<ScanImageResult> {
+  const uploadFile = normalizeImageFile(file);
+  const formData = new FormData();
+  formData.append('image', uploadFile);
+
+  const response = await apiClient.post<Blob>(`/api/v1/scan/full-image-file?mode=${mode}`, formData, {
+    responseType: 'blob',
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  const metadataHeader = response.headers['x-scan-metadata'];
+  if (!metadataHeader || Array.isArray(metadataHeader)) {
+    throw new Error('Scan metadata header is missing.');
+  }
+
+  const data = decodeMetadataHeader(metadataHeader);
+  const imageMimeType = data.image_mime_type || response.data.type || 'image/jpeg';
+  const processedImageFile = new File([response.data], `${crypto.randomUUID()}.jpg`, {
+    type: imageMimeType,
+    lastModified: Date.now(),
+  });
+
+  return { data, processedImageFile };
 }
 
 export async function manualCropImage(
