@@ -30,11 +30,15 @@ export async function manualCropImage(
   file: File,
   points: CropPoint[],
   mode: ScanMode = 'auto',
+  selectedEnhancement?: string,
 ): Promise<ScanResponse> {
   const uploadFile = normalizeImageFile(file);
   const formData = new FormData();
   formData.append('image', uploadFile);
   formData.append('points_json', JSON.stringify(points));
+  if (selectedEnhancement) {
+    formData.append('selected_enhancement', selectedEnhancement);
+  }
 
   const { data } = await apiClient.post<ScanResponse>(`/api/v1/scan/manual-crop?mode=${mode}`, formData, {
     headers: {

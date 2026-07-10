@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { manualCropImage } from '../api/scanApi';
 import { usePageStore } from '../store/usePageStore';
 import type { CropPoint, PageItem } from '../types/api';
-import { compressImage } from '../utils/compressImage';
 import { base64ToFile } from '../utils/imageData';
 
 export function useManualCropPage() {
@@ -14,8 +13,7 @@ export function useManualCropPage() {
       if (!page.originalFile) {
         throw new Error('Original image is not available for this page.');
       }
-      const compressedFile = await compressImage(page.originalFile);
-      const data = await manualCropImage(compressedFile, points, 'auto');
+      const data = await manualCropImage(page.originalFile, points, 'auto', page.selectedEnhancement);
       const imageMimeType = data.image_mime_type || 'image/jpeg';
       const processedImageFile = base64ToFile(data.image_base64, `${page.id}.jpg`, imageMimeType);
       return {
